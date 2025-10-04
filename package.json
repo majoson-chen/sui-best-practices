@@ -1,23 +1,31 @@
 {
-  "name": "sui-best-practices",
-  "type": "module",
-  "private": true,
-  "module": "index.ts",
-  "scripts": {
-    "lint": "eslint",
-    "lint:fix": "eslint --fix",
-    "dev": "vitepress dev",
-    "build": "vitepress build",
-    "preview": "vitepress preview"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "devDependencies": {
-    "@antfu/eslint-config": "^5.4.1",
-    "@types/bun": "latest",
-    "eslint": "^9.36.0",
-    "eslint-plugin-format": "^1.0.1",
-    "vitepress": "^2.0.0-alpha.12"
-  }
+    "name": "sui-best-practices",
+    "type": "module",
+    "private": true,
+    "module": "index.ts",
+    "scripts": {
+        "lint": "eslint",
+        "lint:fix": "eslint --fix",
+        "dev": "vitepress dev",
+        "build": "vitepress build",
+        "preview": "vitepress preview"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "devDependencies": {
+        "@antfu/eslint-config": "^5.4.1",
+        "@types/bun": "latest",
+        "eslint": "^9.36.0",
+        "eslint-plugin-format": "^1.0.1",
+        "lint-staged": "^16.2.3",
+        "simple-git-hooks": "^2.13.1",
+        "vitepress": "^2.0.0-alpha.12"
+    },
+    "simple-git-hooks": {
+        "pre-commit": "bun lint-staged"
+    },
+    "lint-staged": {
+        "*": "eslint --fix"
+    }
 }
