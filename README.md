@@ -39,25 +39,6 @@ bun run build
 bun run preview
 ```
 
-## 📚 目录结构
-
-```
-docs/
-├── index.md           # 首页
-├── api-examples.md    # API 示例
-└── markdown-examples.md # Markdown 示例
-```
-
-## 🤝 贡献指南
-
-我们欢迎社区贡献！请遵循以下步骤：
-
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开一个 Pull Request
-
 ### 开发规范
 
 - 使用 TypeScript
