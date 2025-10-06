@@ -1,30 +1,23 @@
 import { defineConfig } from 'vitepress'
+import { sidebar } from './sidebar'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  srcDir: "docs",
-  
-  title: "SUI最佳实践",
-  description: "社区驱动的 SUI 食谱,早点下班!",
-  themeConfig: {
+    srcDir: 'docs',
+
+    title: 'SUI最佳实践',
+    description: '社区驱动的 SUI 食谱,早点下班!',
+    themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' }
-    ],
+        nav: [
+            { text: '首页', link: '/' },
+            { text: '贡献指南', link: '/how-to-contribute' },
+        ],
 
-    sidebar: [
-      {
-        text: 'Examples',
-        items: [
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' }
-        ]
-      }
-    ],
+        sidebar,
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
-    ]
-  }
+        socialLinks: [
+            { icon: 'github', link: 'https://github.com/majoson-chen/sui-best-practices/' },
+        ],
+    },
 })
