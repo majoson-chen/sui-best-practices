@@ -11,6 +11,15 @@ export const sidebar = [
         { text: '版本控制', items: [] },
         { text: '安全实践', items: [] },
     ] },
+    {
+        text: 'SUI SDKs',
+        items: [
+            {
+                text: 'Go',
+                link: '/sui-sdks/go/go-sui-ctf',
+            },
+        ],
+    },
     { text: 'BCS详解', items: [] },
     { text: '链上查询', items: [] },
     { text: '实用工具', items: [] },
