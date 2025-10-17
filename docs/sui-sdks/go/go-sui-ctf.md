@@ -1,6 +1,5 @@
 最近在学sui的move合约，入门了move,后面看到有个move ctf的共学的活动。想着对ctf没咋接触过就尝试着入坑。
 
-
 看了一下sui的官网文档，支持rust,ts,kotlin,go,py等客户端，本人对ts不是很感冒(菜就多练)。
 
 刚开始尝试了kotlin的客户端，看着支持dsl挺好的，
@@ -22,15 +21,15 @@
 package main
 
 import (
-	"context"
-	"fmt"
+    "context"
+    "fmt"
     "github.com/block-vision/sui-go-sdk/constant"
-	"github.com/block-vision/sui-go-sdk/sui"
+    "github.com/block-vision/sui-go-sdk/sui"
 )
 
 func main() {
-	// configure your endpoint here or use BlockVision's free Sui RPC endpoint
-	cli := sui.NewSuiClient(constant.SuiTestnetEndpoint)
+    // configure your endpoint here or use BlockVision's free Sui RPC endpoint
+    cli := sui.NewSuiClient(constant.SuiTestnetEndpoint)
 }
 
 ```
@@ -42,6 +41,7 @@ func main() {
 ### 1. 使用bcs序列化简单数据类型
 
 序列化一个字符串
+
 ```go
 import(
 "github.com/block-vision/sui-go-sdk/mystenbcs"
@@ -49,10 +49,10 @@ import(
 
 func main() {
     marshal, err := mystenbcs.Marshal("LetsMoveCTF")
-	fmt.Printf("%v\n", marshal)
-	if err != nil {
-		panic(err)
-	}
+    fmt.Printf("%v\n", marshal)
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
@@ -67,32 +67,32 @@ func main() {
 ```go
 
 type Challenge struct {
-	ID          UID
-	Str         string // UTF-8 字符串
-	Difficulity uint64 // u64
-	TureNum     uint64 // u64
+    ID          UID
+    Str         string // UTF-8 字符串
+    Difficulity uint64 // u64
+    TureNum     uint64 // u64
 }
 type UID string
 
 func (u UID) MarshalBCS() ([]byte, error) {
-	bytes := GetAddressHexBytes(string(u))
-	return bytes[:], nil
+    bytes := GetAddressHexBytes(string(u))
+    return bytes[:], nil
 }
 
 func GetAddressHexBytes(address string) [32]byte {
-	// 去除可能存在的 0x 前缀
-	if len(address) >= 2 && address[:2] == "0x" {
-		address = address[2:]
-	}
+    // 去除可能存在的 0x 前缀
+    if len(address) >= 2 && address[:2] == "0x" {
+        address = address[2:]
+    }
 
-	// 将十六进制字符串解码为字节切片
-	bytes, err := hex.DecodeString(address)
-	if err != nil {
-		panic(err)
-	}
-	var result [32]byte
-	copy(result[:], bytes)
-	return result
+    // 将十六进制字符串解码为字节切片
+    bytes, err := hex.DecodeString(address)
+    if err != nil {
+        panic(err)
+    }
+    var result [32]byte
+    copy(result[:], bytes)
+    return result
 }
 
 ```
@@ -102,7 +102,7 @@ func GetAddressHexBytes(address string) [32]byte {
 首先比较重要的就是如何导入现有的账户进行操作，这个模块支持从助记词导入账户
 
 ```go
-func main() { 
+func main() {
     signerAccount, _ := signer.NewSignertWithMnemonic("your mnemonic")
 }
 ```
@@ -113,23 +113,23 @@ func main() {
 
 ```go
 
-func main() { 
+func main() {
     objId := "your obj id"
     ctx := context.Background()
-	cli := sui.NewSuiClient(constant.SuiTestnetEndpoint)
-	object, err := cli.SuiGetObject(ctx, models.SuiGetObjectRequest{
-		ObjectId: objId,
-		Options: models.SuiObjectDataOptions{
-			ShowType:    true,
-			ShowContent: true,
-			ShowBcs:     true,
-			ShowDisplay: true,
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	utils.PrettyPrint(object)
+    cli := sui.NewSuiClient(constant.SuiTestnetEndpoint)
+    object, err := cli.SuiGetObject(ctx, models.SuiGetObjectRequest{
+        ObjectId: objId,
+        Options: models.SuiObjectDataOptions{
+            ShowType:    true,
+            ShowContent: true,
+            ShowBcs:     true,
+            ShowDisplay: true,
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+    utils.PrettyPrint(object)
 }
 
 ```
@@ -189,21 +189,19 @@ module chapter_1::check_in {
 
 ```go
 func BuildFlag(name string) []byte {
-	bytes := []byte(name)
-	marshal, err := mystenbcs.Marshal("LetsMoveCTF")
-	fmt.Printf("%v\n", marshal)
-	if err != nil {
-		panic(err)
-	}
-	result := []byte{}
-	result = append(result, marshal...)
-	result = append(result, bytes...)
-	fmt.Printf("Flag bytes: %v\n", result)
-	digest := sha3.Sum256(result)
-	return digest[:]
+    bytes := []byte(name)
+    marshal, err := mystenbcs.Marshal("LetsMoveCTF")
+    fmt.Printf("%v\n", marshal)
+    if err != nil {
+        panic(err)
+    }
+    result := []byte{}
+    result = append(result, marshal...)
+    result = append(result, bytes...)
+    fmt.Printf("Flag bytes: %v\n", result)
+    digest := sha3.Sum256(result)
+    return digest[:]
 }
 ```
 
 ## 未完待续...
-
-
