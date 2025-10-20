@@ -9,7 +9,12 @@ export const sidebar = [
     { text: 'Move 合约', items: [
         { text: '编程技巧', items: [] },
         { text: '版本控制', items: [] },
-        { text: '安全实践', items: [] },
+        { text: '安全实践', items: [
+            {
+                text: 'entry&public',
+                link: '/entry-public/use-entry-public.md'
+            }
+        ] },
     ] },
     {
         text: 'SUI SDKs',
