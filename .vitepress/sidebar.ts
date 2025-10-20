@@ -7,7 +7,10 @@ export const sidebar = [
     { text: '贡献指南', link: '/how-to-contribute' },
     { text: '密码学基础', items: [] },
     { text: 'Move 合约', items: [
-        { text: '编程技巧', items: [] },
+        { text: '编程技巧', items: [
+            { text: '对象所有权管理模式', link: '/move-contracts/programming-tips/object-ownership-patterns' },
+            { text: '实战解析：借用模式', link: '/move-contracts/programming-tips/borrowing-pattern-deep-dive' },
+        ] },
         { text: '版本控制', items: [] },
         { text: '安全实践', items: [] },
     ] },
