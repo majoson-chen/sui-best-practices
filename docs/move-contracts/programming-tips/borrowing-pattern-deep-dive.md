@@ -1,8 +1,8 @@
 # 实战解析：Move 合约中的借用模式
 
-我在开发第一个 Sui Move 项目时，最头疼的就是各种所有权错误。编译器总是告诉我"value was moved"，但我根本不知道为什么。
+很多开发者刚开始在 Sui 上开发 Move 项目时，最头疼的是各种所有权错误。编译器总提示 'value was moved'，但当时并不理解原因。
 
-今天我们通过一个**数字资产钱包**的完整实战案例，从浅入深地掌握 Move 中的借用模式。这不是理论课，而是一个你可以直接运行和测试的真实项目。
+下面通过一个**数字资产钱包**的完整实战案例，深入浅出掌握 Move 中的借用模式。
 
 ## 实战场景：数字资产钱包
 
@@ -12,7 +12,7 @@
 - 向其他地址转账
 - 查询交易历史
 
-这个场景会遇到典型的借用问题：**我想查看钱包信息，但不想失去钱包的所有权**。
+这个场景会遇到一个典型问题：**我想查看钱包信息，但不想失去钱包所有权**。
 
 ## 第一步：定义钱包结构
 
@@ -52,14 +52,14 @@ module wallet::digital_wallet {
 现在我想添加一个查看钱包信息的功能。作为新手，我最开始这样写：
 
 ```move
-//  新手错误：会转移所有权
+// 新手常见错误：会转移所有权
 public fun get_wallet_info(wallet: Wallet): (String, u64, u64) {
     let name = wallet.name;
     let balance_value = balance::value(&wallet.balance);
     let tx_count = wallet.transaction_count;
 
-    // 想要返回钱包给用户，但是...
-    // transfer::public_transfer(wallet, wallet.owner); //  wallet 已经被部分 move 了！
+    // 想把钱包还给用户，但是...
+    // transfer::public_transfer(wallet, wallet.owner); // wallet 已部分被 move
 
     (name, balance_value, tx_count)
 }
@@ -77,9 +77,9 @@ public fun get_wallet_info(wallet: Wallet): (String, u64, u64) {
 
 ```move
 /// 查看钱包信息（只读）
-public fun get_wallet_info(wallet: &Wallet): (String, u64, u64) {
+public fun get_wallet_info(wallet: &Wallet): (&String, u64, u64) {
     (
-        wallet.name,                              // 借用访问
+        &wallet.name,                             // 借用访问：返回 &String
         balance::value(&wallet.balance),          // 借用访问
         wallet.transaction_count                  // 借用访问
     )
@@ -98,21 +98,21 @@ public fun get_balance(wallet: &Wallet): u64 {
 
 ## 第四步：实际使用场景
 
-现在我们可以在不失去钱包所有权的情况下，多次查询钱包信息：
+现在我们可以在不丢失钱包所有权的前提下，多次查询钱包信息：
 
 ```move
 /// 完整的钱包操作示例
 public fun wallet_operations_demo(mut wallet: Wallet, ctx: &mut TxContext) {
     // 1. 查看钱包信息（借用，不转移所有权）
-    let (name, balance_val, tx_count) = get_wallet_info(&wallet);
+    let (_, balance_val, _) = get_wallet_info(&wallet);
 
-    // 2. 检查余额是否足够（借用）
-    let has_enough = get_balance(&wallet) > 1000;
+    // 2. 检查余额是否足够（使用返回值）
+    let has_enough = balance_val > 1000;
 
     // 3. 验证所有权（借用）
     let is_valid_owner = is_owner(&wallet, tx_context::sender(ctx));
 
-    // 4. 如果条件满足，进行转账（可变借用）
+    // 4. 如果条件满足，进行更新（可变借用）
     if (has_enough && is_valid_owner) {
         // 这里我们可以安全地修改钱包
         update_transaction_count(&mut wallet);
@@ -138,9 +138,9 @@ public fun update_transaction_count(wallet: &mut Wallet) {
 
 ```move
 /// 只读访问，不能修改数据
-public fun get_wallet_info(wallet: &Wallet): (String, u64, u64) {
+public fun get_wallet_info(wallet: &Wallet): (&String, u64, u64) {
     // 可以读取所有字段
-    (wallet.name, balance::value(&wallet.balance), wallet.transaction_count)
+    (&wallet.name, balance::value(&wallet.balance), wallet.transaction_count)
 }
 ```
 
@@ -171,10 +171,10 @@ public fun get_balance(wallet: &Wallet): u64 {
 #### **规则1：同一时间只能有一个可变借用**
 
 ```move
-//  错误：同时存在多个可变借用
+// 错误：同时存在多个可变借用
 public fun bad_multiple_mut_borrow(wallet: &mut Wallet) {
     let balance_ref = &mut wallet.balance;
-    let count_ref = &mut wallet.transaction_count;  // ❌ 编译错误
+    let count_ref = &mut wallet.transaction_count;  // 编译错误
     // 不能同时对同一个对象的不同字段进行可变借用
 }
 
@@ -197,7 +197,7 @@ public fun bad_mixed_borrow(wallet: &mut Wallet) {
     // 使用 count_ref...
 }
 
-//  正确：先完成不可变借用，再进行可变借用
+// 正确：先完成不可变借用，再进行可变借用
 public fun good_mixed_borrow(wallet: &mut Wallet) {
     let old_count = wallet.transaction_count;       // 读取值（借用立即结束）
     wallet.transaction_count = old_count + 1;       // 现在可以可变借用
@@ -216,7 +216,7 @@ public fun borrow_lifetime_demo(wallet: &mut Wallet): u64 {
     // 不能对 wallet.balance 进行修改
 
     // 借用在这里结束（balance_value 不再被使用）
-    wallet.transaction_count = wallet.transaction_count + 1;  //  可以修改其他字段
+    wallet.transaction_count = wallet.transaction_count + 1;  // 可以修改其他字段
 
     balance_value  // 返回之前读取的值
 }
@@ -231,6 +231,7 @@ public fun borrow_lifetime_demo(wallet: &mut Wallet): u64 {
 module wallet::digital_wallet_tests {
     use wallet::digital_wallet::{Self, Wallet};
     use sui::test_scenario;
+    use sui::transfer;
     use std::string;
 
     #[test]
@@ -241,14 +242,15 @@ module wallet::digital_wallet_tests {
         let wallet = digital_wallet::create_wallet(b"Test Wallet", test_scenario::ctx(&mut scenario));
 
         // 测试1：多次不可变借用（应该成功）
-        let (name1, balance1, count1) = digital_wallet::get_wallet_info(&wallet);
-        let (name2, balance2, count2) = digital_wallet::get_wallet_info(&wallet);
-        assert!(name1 == name2, 0);
+        let (_, balance1, count1) = digital_wallet::get_wallet_info(&wallet);
+        let (_, balance2, count2) = digital_wallet::get_wallet_info(&wallet);
+        assert!(balance1 == balance2, 0);
+        assert!(count1 == count2, 1);
 
         // 测试2：可变借用修改数据
         digital_wallet::update_transaction_count(&mut wallet);
         let (_, _, new_count) = digital_wallet::get_wallet_info(&wallet);
-        assert!(new_count == count1 + 1, 1);
+        assert!(new_count == count1 + 1, 2);
 
         // 测试3：借用后仍可转移所有权
         transfer::public_transfer(wallet, @0x1);
@@ -258,9 +260,9 @@ module wallet::digital_wallet_tests {
 }
 ```
 
-## 💡 实战经验总结
+## 实战经验总结
 
-### 🔍 **调试技巧**
+### **调试技巧**
 
 当遇到借用错误时，我的调试步骤：
 
@@ -268,30 +270,25 @@ module wallet::digital_wallet_tests {
 2. **检查借用冲突**：是否有多个可变借用或混合借用？
 3. **确认生命周期**：借用是否在使用完后及时结束？
 
-### ⚡ **性能优化**
+### **性能优化**
 
 - **优先使用借用**：避免不必要的数据复制
 - **最小化借用范围**：让借用尽早结束
 - **批量操作**：减少重复的借用检查
 
-### 🎯 **最佳实践**
+### **最佳实践**
 
 1. **先读后写**：先完成所有读取操作，最后进行修改
 2. **函数设计**：查询函数用不可变借用，修改函数用可变借用
 3. **错误处理**：借用失败时提供清晰的错误信息
 
-## 🚀 总结
+## 总结
 
-通过这个数字钱包的实战案例，我们深入理解了Move中的借用模式：
+通过这个数字钱包的实战案例，我们深入理解了 Move 中的借用模式：
 
 - **概念理解**：借用让我们在不转移所有权的情况下访问数据
 - **实际应用**：查询、验证、修改等场景都需要借用
 - **规则掌握**：理解借用的限制和生命周期
 - **调试技巧**：快速定位和解决借用相关的编译错误
 
-**关键收获**：借用模式不是限制，而是Move语言帮助我们写出更安全、更高效代码的工具。掌握了借用模式，你就掌握了Move编程的核心技能之一。
-
-## 🔗 系列文章
-
-- [← 返回：对象所有权管理模式总览](./object-ownership-patterns.md)
-- [→ 下一篇：所有权转移模式实战](./ownership-transfer-pattern.md)
+**关键收获**：借用模式不是限制，而是 Move 语言帮助我们写出更安全、更高效代码的工具。掌握借用模式，是 Move 编程的核心能力之一。
