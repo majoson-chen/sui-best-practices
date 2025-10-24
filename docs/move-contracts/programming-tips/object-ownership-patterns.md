@@ -31,6 +31,7 @@ function processUser(user) {
 
 ```move
 // Move - 所有权转移后不能再使用
+use sui::transfer;
 public fun process_user(user: User, recipient: address) {
     // 如果先记录日志，user 还可以使用
     // log_activity(&user); // 借用访问，不转移所有权
@@ -69,9 +70,9 @@ public fun process_user(user: User, recipient: address) {
 - **不可逆**：转移后原所有者失去控制权
 - **原子性**：要么成功，要么失败，不存在中间状态
 
-**典型应用**：NFT 交易、资产赠送、游戏道具转让、智能合约升级
+**典型应用**：NFT 交易、资产赠送、游戏道具转让、智能合约升级（移交 UpgradeCap）
 
-详细教程：[所有权转移模式实战](#) *(即将发布)*
+详细教程：[所有权转移模式实战](./ownership-transfer-pattern.md)
 
 ### 模式三：条件性所有权管理 (Conditional Ownership)
 
@@ -80,12 +81,14 @@ public fun process_user(user: User, recipient: address) {
 **核心概念**：
 - **条件判断**：根据运行时状态决定所有权操作
 - **资源回收**：确保对象在所有分支中都有明确归属
-- **Option<T> 类型**：处理可能存在或不存在的对象
+- **std::option::Option<T> 类型**：处理可能存在或不存在的对象
 - **错误处理**：在条件不满足时优雅失败
 
 **典型应用**：游戏道具合成、拍卖系统、条件转账、智能托管
 
-详细教程：[条件性所有权管理实战](#) *(即将发布)*
+详细教程：
+- [条件性所有权管理模式（上）- 基础篇](./conditional-ownership-pattern-part1.md)
+- [条件性所有权管理模式（下）- 进阶篇](./conditional-ownership-pattern-part2.md)
 
 ### 模式四：批量处理模式 (Batch Processing)
 
@@ -93,13 +96,13 @@ public fun process_user(user: User, recipient: address) {
 
 **核心概念**：
 - **集合所有权**：在 Vector/Table 中统一管理对象
-- **迭代器模式**：安全遍历并处理对象集合
+- **遍历模式**：基于 vector 下标或 pop_back 循环安全处理集合
 - **批量转移**：高效处理多个对象的所有权变更
 - **内存优化**：避免不必要的对象复制和移动
 
 **典型应用**：批量转账、NFT 集合操作、游戏背包管理、数据迁移
 
-详细教程：[批量处理模式实战](#) *(即将发布)*
+详细教程：[批量处理模式实战](./batch-processing-pattern.md)
 
 ### 模式五：复合所有权模式 (Composite Ownership)
 
@@ -113,7 +116,13 @@ public fun process_user(user: User, recipient: address) {
 
 **典型应用**：DeFi 协议、复杂游戏系统、多方交易、企业级应用
 
-详细教程：[复合所有权模式实战](#) *(即将发布)*
+详细教程：[复合所有权模式实战](./composite-ownership-pattern.md)
+
+## 所有权类型速览
+
+- Owned（地址独占）：对象由单一 address 独占。可用 `sui::transfer::public_transfer`（需 `store`）或在对象定义模块中使用 `sui::transfer::transfer` 变更所有权。
+- Shared（共享）：对象对多方可用。使用 `sui::transfer::public_share_object` 将对象共享。
+- Immutable（冻结）：对象不可再变更或转移。使用 `sui::transfer::public_freeze_object` 冻结。
 
 ## 快速选择指南
 
@@ -123,12 +132,12 @@ public fun process_user(user: User, recipient: address) {
 |---------|---------|----------|
 | 只想查看数据，不修改 | 借用模式 | `&T` 不可变借用 |
 | 需要修改数据，保留所有权 | 借用模式 | `&mut T` 可变借用 |
-| 彻底转移给其他用户 | 所有权转移 | `transfer::public_transfer` |
-| 根据条件决定是否转移 | 条件性管理 | `if/else` + `Option<T>` |
+| 彻底转移给其他用户 | 所有权转移 | `sui::transfer::public_transfer`（需 `store`）/ `sui::transfer::transfer`（对象定义模块内） |
+| 根据条件决定是否转移 | 条件性管理 | `if/else` + `std::option::Option<T>` |
 | 处理多个对象 | 批量处理 | `vector` + 循环 |
 | 复杂业务逻辑 | 复合模式 | 多种模式组合 |
 
-### **实战练习建议**
+## 实战练习建议
 
 **新手阶段**
 - **动手实践**：为每个模式编写代码并亲自验证
@@ -142,7 +151,7 @@ public fun process_user(user: User, recipient: address) {
 
 ## 常见问题速查
 
-### **编译错误快速诊断**
+### 编译错误快速诊断
 
 遇到所有权相关的编译错误？可对照下表：
 
@@ -152,10 +161,14 @@ public fun process_user(user: User, recipient: address) {
 | `cannot borrow as mutable` | 多个可变借用冲突 | 确保同一时刻仅有一个 `&mut` |
 | `cannot borrow as immutable` | 在可变借用期间尝试不可变借用 | 调整借用顺序或生命周期 |
 | `use of moved value` | 使用已移动的值 | 在 move 前完成所有操作 |
+| `Unused value without the 'drop' ability` | 未使用的值缺少 `drop` 能力 | 显式使用该值，或为类型添加 `drop` 能力 |
+| `Invalid usage of moved value` | 在被 move 后继续使用 | 确保在 move 前完成所有借用和读取 |
+| `Cannot take mutable reference` | 存在活动的借用导致可变借用冲突 | 同一时刻仅保留一个 `&mut`，或缩短借用生命周期 |
+| `Cannot take immutable reference while mutable borrow exists` | 可变借用期间尝试不可变借用 | 调整借用顺序或作用域 |
 
-### **性能优化提示**
+### 性能优化提示
 
 - **优先使用借用**：避免不必要的对象复制和转移
 - **批量操作**：多个对象使用 `vector` 和循环处理
 - **预先规划**：在函数设计阶段考虑所有权流向
-- **避免深拷贝**：尽量使用引用而非值传递
+- **避免不必要的 move**：优先使用 `&T`/`&mut T` 借用；仅在确需转移时使用 move/transfer

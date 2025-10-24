@@ -102,7 +102,8 @@ public fun get_balance(wallet: &Wallet): u64 {
 
 ```move
 /// 完整的钱包操作示例
-public fun wallet_operations_demo(mut wallet: Wallet, ctx: &mut TxContext) {
+public fun wallet_operations_demo(wallet: Wallet, ctx: &mut TxContext) {
+    let mut wallet = wallet;
     // 1. 查看钱包信息（借用，不转移所有权）
     let (_, balance_val, _) = get_wallet_info(&wallet);
 
