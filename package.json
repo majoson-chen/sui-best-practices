@@ -23,7 +23,7 @@
         "vitepress": "^2.0.0-alpha.12"
     },
     "simple-git-hooks": {
-        "pre-commit": "bun lint-staged"
+        "pre-commit": "npx bun lint-staged"
     },
     "lint-staged": {
         "*": "eslint --fix"
