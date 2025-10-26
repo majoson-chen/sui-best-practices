@@ -56,3 +56,36 @@ async function queryObject(objectId) {
 - `client.getObject()` 是核心查询方法
 - `options` 参数控制返回哪些信息字段
 - 包含完整的错误处理机制
+
+### 3. 演示函数
+
+```javascript
+async function demonstrateObjectQueries() {
+    console.log('🚀 Sui 对象查询演示')
+    console.log('='.repeat(80))
+
+    // 示例对象ID列表（包含不同类型的对象）
+    const exampleObjects = [
+        {
+            id: '0x6b0c51f4925126d690619091b317fda87d1cd5223e82ecb0bcb6ded3baa3d91d',
+            description: '智能合约包'
+        },
+        {
+            id: '0x0000000000000000000000000000000000000000000000000000000000000006',
+            description: '系统对象（时钟）'
+        }
+    ]
+
+    for (const example of exampleObjects) {
+        console.log(`\n📌 查询示例: ${example.description}`)
+        await queryObject(example.id)
+        console.log(`\n${'='.repeat(80)}`)
+    }
+}
+```
+
+**说明**:
+
+- 提供预配置的示例对象进行演示
+- 包含不同类型的对象（智能合约包、系统对象）
+- 循环查询每个示例对象
