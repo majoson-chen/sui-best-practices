@@ -12,7 +12,12 @@ export const sidebar = [
             { text: '实战解析：借用模式', link: '/move-contracts/programming-tips/borrowing-pattern-deep-dive' },
         ] },
         { text: '版本控制', items: [] },
-        { text: '安全实践', items: [] },
+        { text: '安全实践', items: [
+            {
+                text: 'entry&public',
+                link: '/entry-public/use-entry-public.md'
+            }
+        ] },
     ] },
     {
         text: 'SUI SDKs',
