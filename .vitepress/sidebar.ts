@@ -5,7 +5,12 @@ export const sidebar = [
     { text: '首页', link: '/' },
     { text: '简介', link: '/introduce' },
     { text: '贡献指南', link: '/how-to-contribute' },
-    { text: '密码学基础', items: [] },
+    { text: '密码学基础', items: [
+        {
+            text: '密码学大冒险',
+            link: '/crypto/CryptographicAdventure.md'
+        }
+    ] },
     { text: 'Move 合约', items: [
         { text: '编程技巧', items: [
             { text: '对象所有权管理模式', link: '/move-contracts/programming-tips/object-ownership-patterns' },
