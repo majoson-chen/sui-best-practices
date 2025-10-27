@@ -1,0 +1,212 @@
+// Sui 对象查询演示
+// 演示如何使用 Sui TypeScript SDK 查询特定对象的详细信息
+
+const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
+
+// 连接到 Sui 测试网
+const client = new SuiClient({
+    url: getFullnodeUrl('testnet'),
+});
+
+/**
+ * 查询对象的详细信息
+ * @param {string} objectId - 要查询的对象ID
+ */
+async function queryObject(objectId) {
+    try {
+        console.log(`🔍 查询对象: ${objectId}`);
+        console.log('=' .repeat(60));
+        
+        // 调用 getObject 方法查询对象
+        const objectInfo = await client.getObject({
+            id: objectId,
+            options: {
+                showType: true,           // 显示对象类型
+                showOwner: true,          // 显示所有者信息
+                showPreviousTransaction: true, // 显示上一笔交易
+                showDisplay: true,        // 显示显示字段
+                showContent: true,        // 显示内容字段
+                showBcs: true,           // 显示BCS数据
+                showStorageRebate: true   // 显示存储退款
+            }
+        });
+        
+        // 显示查询结果
+        console.log('📋 对象基本信息:');
+        console.log(`   对象ID: ${objectInfo.data?.objectId || 'N/A'}`);
+        console.log(`   版本: ${objectInfo.data?.version || 'N/A'}`);
+        console.log(`   数字化: ${objectInfo.data?.digest || 'N/A'}`);
+        
+        if (objectInfo.data?.type) {
+            console.log(`\n🏷️  对象类型: ${objectInfo.data.type}`);
+        }
+        
+        if (objectInfo.data?.owner) {
+            console.log('\n👤 所有者信息:');
+            if (objectInfo.data.owner.AddressOwner) {
+                console.log(`   地址所有者: ${objectInfo.data.owner.AddressOwner}`);
+            } else if (objectInfo.data.owner.ObjectOwner) {
+                console.log(`   对象所有者: ${objectInfo.data.owner.ObjectOwner}`);
+            } else if (objectInfo.data.owner.Shared) {
+                console.log(`   共享对象: 版本 ${objectInfo.data.owner.Shared.initial_shared_version}`);
+            } else {
+                console.log(`   其他: ${JSON.stringify(objectInfo.data.owner)}`);
+            }
+        }
+        
+        if (objectInfo.data?.previousTransaction) {
+            console.log(`\n🔄 上一笔交易: ${objectInfo.data.previousTransaction}`);
+        }
+        
+        if (objectInfo.data?.storageRebate) {
+            console.log(`\n💰 存储退款: ${objectInfo.data.storageRebalance} MIST`);
+        }
+        
+        // if (objectInfo.data?.content) {
+        //     console.log('\n📦 对象内容:');
+        //     console.log(JSON.stringify(objectInfo.data.content, null, 2));
+        // }
+        
+        if (objectInfo.data?.display) {
+            console.log('\n🎨 显示字段:');
+            console.log(JSON.stringify(objectInfo.data.display, null, 2));
+        }
+        
+        if (objectInfo.data?.bcs) {
+            console.log('\n🔢 BCS数据:');
+            console.log(`   大小: ${objectInfo.data.bcs.length} 字节`);
+            console.log(`   数据: ${objectInfo.data.bcs}`);
+        }
+        
+        return objectInfo;
+        
+    } catch (error) {
+        console.error('❌ 查询对象失败:', error.message);
+        
+        // 提供更详细的错误信息
+        if (error.code === -3) {
+            console.error('   可能原因: 对象不存在或已被删除');
+        } else if (error.code === -4) {
+            console.error('   可能原因: 对象ID格式无效');
+        }
+        
+        return null;
+    }
+}
+
+/**
+ * 演示查询不同类型的对象
+ */
+async function demonstrateObjectQueries() {
+    console.log('🚀 Sui 对象查询演示');
+    console.log('=' .repeat(80));
+    
+    // 示例对象ID列表（包含不同类型的对象）
+    const exampleObjects = [
+        {
+            id: '0x6b0c51f4925126d690619091b317fda87d1cd5223e82ecb0bcb6ded3baa3d91d',
+            description: '智能合约包'
+        },
+        {
+            id: '0x0000000000000000000000000000000000000000000000000000000000000006',
+            description: '系统对象（时钟）'
+        }
+    ];
+    
+    for (const example of exampleObjects) {
+        console.log(`\n📌 查询示例: ${example.description}`);
+        await queryObject(example.id);
+        console.log('\n' + '='.repeat(80));
+    }
+}
+
+/**
+ * 交互式对象查询
+ */
+async function interactiveQuery() {
+    const readline = require('readline');
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    
+    const question = (prompt) => {
+        return new Promise((resolve) => {
+            rl.question(prompt, resolve);
+        });
+    };
+    
+    console.log('\n🎯 交互式对象查询');
+    console.log('请输入要查询的对象ID（或输入 "exit" 退出）:');
+    
+    while (true) {
+        const objectId = await question('\n对象ID: ');
+        
+        if (objectId.toLowerCase() === 'exit') {
+            break;
+        }
+        
+        if (!objectId || !objectId.startsWith('0x')) {
+            console.log('❌ 请输入有效的对象ID（以0x开头）');
+            continue;
+        }
+        
+        await queryObject(objectId);
+    }
+    
+    rl.close();
+    console.log('👋 感谢使用！');
+}
+
+// 主函数
+async function main() {
+    try {
+        // 检查命令行参数
+        const args = process.argv.slice(2);
+        
+        if (args.length > 0) {
+            // 如果提供了对象ID参数，直接查询该对象
+            const objectId = args[0];
+            console.log('🎯 单对象查询模式');
+            await queryObject(objectId);
+        } else {
+            // 否则运行演示
+            await demonstrateObjectQueries();
+            
+            // 询问是否进行交互式查询
+            const readline = require('readline');
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+            
+            const question = (prompt) => {
+                return new Promise((resolve) => {
+                    rl.question(prompt, resolve);
+                });
+            };
+            
+            const answer = await question('\n是否进行交互式查询？(y/n): ');
+            rl.close();
+            
+            if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
+                await interactiveQuery();
+            }
+        }
+        
+    } catch (error) {
+        console.error('程序执行失败:', error);
+    }
+}
+
+// 如果直接运行此文件
+if (require.main === module) {
+    main().catch(console.error);
+}
+
+// 导出函数供其他模块使用
+module.exports = {
+    queryObject,
+    demonstrateObjectQueries,
+    interactiveQuery
+};
