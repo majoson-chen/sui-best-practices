@@ -8,7 +8,7 @@
 
 # 首先合约部分
 
-```rust
+```move
     /// 定义测试 USDC 代币 - one-time witness
     public struct TEST_COIN has drop {}
 
@@ -38,7 +38,7 @@
 
 # 铸造测试币
 
-```rust
+```move
     /// 铸造测试币
     public entry fun mint_usdc(
         treasury_cap: &mut TreasuryCap<TEST_COIN>,
