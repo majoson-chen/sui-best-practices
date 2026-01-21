@@ -35,7 +35,7 @@ use sui::transfer;
 public fun process_user(user: User, recipient: address) {
     // 如果先记录日志，user 还可以使用
     // log_activity(&user); // 借用访问，不转移所有权
-    
+
     transfer::public_transfer(user, recipient); // user 已被 move
     // log_activity(&user); // 编译错误：user 已被 move，无法再使用
 }
@@ -52,6 +52,7 @@ public fun process_user(user: User, recipient: address) {
 **适用场景**：需要读取或修改对象，但不转移所有权
 
 **核心概念**：
+
 - **不可变借用** (`&T`)：只读访问，可同时存在多个
 - **可变借用** (`&mut T`)：修改访问，同一时刻仅能有一个
 - **借用规则**：通过编译期检查确保内存安全
@@ -66,6 +67,7 @@ public fun process_user(user: User, recipient: address) {
 **适用场景**：需要彻底转移对象的控制权
 
 **核心概念**：
+
 - **完全转移**：对象所有权从一个地址迁移到另一个地址
 - **不可逆**：转移后原所有者失去控制权
 - **原子性**：要么成功，要么失败，不存在中间状态
@@ -79,6 +81,7 @@ public fun process_user(user: User, recipient: address) {
 **适用场景**：根据业务逻辑决定是否转移所有权
 
 **核心概念**：
+
 - **条件判断**：根据运行时状态决定所有权操作
 - **资源回收**：确保对象在所有分支中都有明确归属
 - **std::option::Option<T> 类型**：处理可能存在或不存在的对象
@@ -87,6 +90,7 @@ public fun process_user(user: User, recipient: address) {
 **典型应用**：游戏道具合成、拍卖系统、条件转账、智能托管
 
 详细教程：
+
 - [条件性所有权管理模式（上）- 基础篇](./conditional-ownership-pattern-part1.md)
 - [条件性所有权管理模式（下）- 进阶篇](./conditional-ownership-pattern-part2.md)
 
@@ -95,6 +99,7 @@ public fun process_user(user: User, recipient: address) {
 **适用场景**：需要对多个对象进行集合操作
 
 **核心概念**：
+
 - **集合所有权**：在 Vector/Table 中统一管理对象
 - **遍历模式**：基于 vector 下标或 pop_back 循环安全处理集合
 - **批量转移**：高效处理多个对象的所有权变更
@@ -109,6 +114,7 @@ public fun process_user(user: User, recipient: address) {
 **适用场景**：复杂业务逻辑中的多种模式组合
 
 **核心概念**：
+
 - **模式组合**：在同一个函数中使用多种所有权模式
 - **状态机设计**：基于对象状态选择合适的所有权操作
 - **架构分层**：不同层次使用不同的所有权策略
@@ -128,23 +134,25 @@ public fun process_user(user: User, recipient: address) {
 
 不确定该用哪种模式？按需快速选择：
 
-| 需求场景 | 推荐模式 | 关键特征 |
-|---------|---------|----------|
-| 只想查看数据，不修改 | 借用模式 | `&T` 不可变借用 |
-| 需要修改数据，保留所有权 | 借用模式 | `&mut T` 可变借用 |
-| 彻底转移给其他用户 | 所有权转移 | `sui::transfer::public_transfer`（需 `store`）/ `sui::transfer::transfer`（对象定义模块内） |
-| 根据条件决定是否转移 | 条件性管理 | `if/else` + `std::option::Option<T>` |
-| 处理多个对象 | 批量处理 | `vector` + 循环 |
-| 复杂业务逻辑 | 复合模式 | 多种模式组合 |
+| 需求场景                 | 推荐模式   | 关键特征                                                                                    |
+| ------------------------ | ---------- | ------------------------------------------------------------------------------------------- |
+| 只想查看数据，不修改     | 借用模式   | `&T` 不可变借用                                                                             |
+| 需要修改数据，保留所有权 | 借用模式   | `&mut T` 可变借用                                                                           |
+| 彻底转移给其他用户       | 所有权转移 | `sui::transfer::public_transfer`（需 `store`）/ `sui::transfer::transfer`（对象定义模块内） |
+| 根据条件决定是否转移     | 条件性管理 | `if/else` + `std::option::Option<T>`                                                        |
+| 处理多个对象             | 批量处理   | `vector` + 循环                                                                             |
+| 复杂业务逻辑             | 复合模式   | 多种模式组合                                                                                |
 
 ## 实战练习建议
 
 **新手阶段**
+
 - **动手实践**：为每个模式编写代码并亲自验证
 - **错误调试**：刻意制造所有权错误，练习快速定位问题
 - **代码对比**：对比正确与错误的写法，理解差异
 
 **进阶阶段**
+
 - **性能对比**：对比不同模式的 gas 开销与执行效率
 - **项目应用**：在实际项目中应用这些模式
 - **架构设计**：在系统设计阶段选择合适的所有权策略
@@ -155,16 +163,16 @@ public fun process_user(user: User, recipient: address) {
 
 遇到所有权相关的编译错误？可对照下表：
 
-| 错误信息关键词 | 可能原因 | 解决方案 |
-|---------------|----------|----------|
-| `value was moved` | 对象已被转移 | 使用借用 `&T` 或 `&mut T` |
-| `cannot borrow as mutable` | 多个可变借用冲突 | 确保同一时刻仅有一个 `&mut` |
-| `cannot borrow as immutable` | 在可变借用期间尝试不可变借用 | 调整借用顺序或生命周期 |
-| `use of moved value` | 使用已移动的值 | 在 move 前完成所有操作 |
-| `Unused value without the 'drop' ability` | 未使用的值缺少 `drop` 能力 | 显式使用该值，或为类型添加 `drop` 能力 |
-| `Invalid usage of moved value` | 在被 move 后继续使用 | 确保在 move 前完成所有借用和读取 |
-| `Cannot take mutable reference` | 存在活动的借用导致可变借用冲突 | 同一时刻仅保留一个 `&mut`，或缩短借用生命周期 |
-| `Cannot take immutable reference while mutable borrow exists` | 可变借用期间尝试不可变借用 | 调整借用顺序或作用域 |
+| 错误信息关键词                                                | 可能原因                       | 解决方案                                      |
+| ------------------------------------------------------------- | ------------------------------ | --------------------------------------------- |
+| `value was moved`                                             | 对象已被转移                   | 使用借用 `&T` 或 `&mut T`                     |
+| `cannot borrow as mutable`                                    | 多个可变借用冲突               | 确保同一时刻仅有一个 `&mut`                   |
+| `cannot borrow as immutable`                                  | 在可变借用期间尝试不可变借用   | 调整借用顺序或生命周期                        |
+| `use of moved value`                                          | 使用已移动的值                 | 在 move 前完成所有操作                        |
+| `Unused value without the 'drop' ability`                     | 未使用的值缺少 `drop` 能力     | 显式使用该值，或为类型添加 `drop` 能力        |
+| `Invalid usage of moved value`                                | 在被 move 后继续使用           | 确保在 move 前完成所有借用和读取              |
+| `Cannot take mutable reference`                               | 存在活动的借用导致可变借用冲突 | 同一时刻仅保留一个 `&mut`，或缩短借用生命周期 |
+| `Cannot take immutable reference while mutable borrow exists` | 可变借用期间尝试不可变借用     | 调整借用顺序或作用域                          |
 
 ### 性能优化提示
 

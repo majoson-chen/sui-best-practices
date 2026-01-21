@@ -9,6 +9,7 @@
 ### 传统方式的问题
 
 在区块链上，如果为每个操作发起一次交易：
+
 - **Gas 成本高**：每次交易都要支付固定的基础 gas
 - **效率低下**：需要等待多次交易确认
 - **用户体验差**：需要多次签名授权
@@ -64,13 +65,13 @@ module nft_collection::batch_nft {
 public fun bad_batch_process(nfts: vector<NFT>) {
     let len = vector::length(&nfts);
     let mut i = 0;
-    
+
     while (i < len / 2) {  // 只处理一半
         let nft = vector::pop_back(&mut nfts);
         transfer::public_transfer(nft, 0x1);
         i = i + 1;
     };
-    
+
     // 编译错误：vector 中还有对象，不能销毁
     // vector::destroy_empty(nfts);
 }
@@ -91,19 +92,19 @@ public fun batch_mint_nfts(
     ctx: &mut TxContext
 ) {
     let count = vector::length(&names);
-    
+
     // 验证输入
     assert!(count > 0, EEmptyBatch);
     assert!(count == vector::length(&recipients), ELengthMismatch);
     assert!(count <= 100, ETooManyItems);
-    
+
     let mut i = 0;
     let mut names = names;
     let mut recipients = recipients;
     while (i < count) {
         let name_bytes = vector::pop_back(&mut names);
         let recipient = vector::pop_back(&mut recipients);
-        
+
         let nft = NFT {
             id: object::new(ctx),
             name: string::utf8(name_bytes),
@@ -111,16 +112,16 @@ public fun batch_mint_nfts(
             serial_number: collection.total_supply + i,
             owner: recipient,
         };
-        
+
         transfer::public_transfer(nft, recipient);
         i = i + 1;
     };
-    
+
     vector::destroy_empty(names);
     vector::destroy_empty(recipients);
-    
+
     collection.total_supply = collection.total_supply + count;
-    
+
     event::emit(BatchMintEvent {
         collection_id: object::id(collection),
         count,
@@ -148,7 +149,7 @@ public fun batch_transfer_to_one(
     let count = vector::length(&nfts);
     assert!(count > 0, EEmptyBatch);
     assert!(count <= 100, ETooManyItems);
-    
+
     let mut i = 0;
     while (i < count) {
         let nft = vector::pop_back(&mut nfts);
@@ -158,9 +159,9 @@ public fun batch_transfer_to_one(
         transfer::public_transfer(nft, recipient);
         i = i + 1;
     };
-    
+
     vector::destroy_empty(nfts);
-    
+
     event::emit(BatchTransferEvent {
         from: sender,
         to: recipient,
@@ -176,11 +177,11 @@ public fun batch_transfer_to_many(
 ) {
     let sender = tx_context::sender(ctx);
     let count = vector::length(&nfts);
-    
+
     assert!(count > 0, EEmptyBatch);
     assert!(count == vector::length(&recipients), ELengthMismatch);
     assert!(count <= 100, ETooManyItems);
-    
+
     let mut i = 0;
     while (i < count) {
         let nft = vector::pop_back(&mut nfts);
@@ -191,7 +192,7 @@ public fun batch_transfer_to_many(
         transfer::public_transfer(nft, recipient);
         i = i + 1;
     };
-    
+
     vector::destroy_empty(nfts);
 }
 
@@ -214,19 +215,19 @@ public fun batch_burn_nfts(
     let count = vector::length(&nfts);
     assert!(count > 0, EEmptyBatch);
     assert!(count <= 100, ETooManyItems);
-    
+
     let mut i = 0;
     while (i < count) {
         let nft = vector::pop_back(&mut nfts);
         assert!(nft.owner == sender, ENotOwner);
-        
+
         let NFT { id, name: _, collection_id: _, serial_number: _, owner: _ } = nft;
         object::delete(id);
         i = i + 1;
     };
-    
+
     vector::destroy_empty(nfts);
-    
+
     event::emit(BatchBurnEvent {
         owner: sender,
         count,
@@ -257,11 +258,11 @@ public fun batch_transfer_filtered(
     assert!(count <= 100, ETooManyItems);
     let mut transferred = 0;
     let mut returned = 0;
-    
+
     while (vector::length(&nfts) > 0) {
         let nft = vector::pop_back(&mut nfts);
         assert!(nft.owner == sender, ENotOwner);
-        
+
         if (nft.serial_number >= min_serial && nft.serial_number <= max_serial) {
             let mut nft = nft;
             nft.owner = recipient;
@@ -274,9 +275,9 @@ public fun batch_transfer_filtered(
             returned = returned + 1;
         }
     };
-    
+
     vector::destroy_empty(nfts);
-    
+
     event::emit(BatchFilteredTransferEvent {
         from: sender,
         to: recipient,
@@ -308,10 +309,10 @@ public fun batch_transfer_chunk(
     let to_process = if (chunk_size < total) { chunk_size } else { total };
     assert!(chunk_size > 0, EEmptyBatch);
     assert!(to_process <= 100, ETooManyItems);
-    
+
     let mut remaining = vector::empty<NFT>();
     let mut processed = 0;
-    
+
     // 处理一批
     while (processed < to_process) {
         let nft = vector::pop_back(&mut nfts);
@@ -321,13 +322,13 @@ public fun batch_transfer_chunk(
         transfer::public_transfer(nft, recipient);
         processed = processed + 1;
     };
-    
+
     // 保留剩余
     while (vector::length(&nfts) > 0) {
         let nft = vector::pop_back(&mut nfts);
         vector::push_back(&mut remaining, nft);
     };
-    
+
     vector::destroy_empty(nfts);
     remaining
 }
@@ -347,7 +348,7 @@ public fun optimized_batch_transfer(
     let sender = tx_context::sender(ctx);
     let count = vector::length(&nfts);
     assert!(count <= 100, ETooManyItems);
-    
+
     // 一次性验证所有权
     let mut i = 0;
     while (i < count) {
@@ -355,7 +356,7 @@ public fun optimized_batch_transfer(
         assert!(nft.owner == sender, ENotOwner);
         i = i + 1;
     };
-    
+
     // 批量转移
     while (vector::length(&nfts) > 0) {
         let nft = vector::pop_back(&mut nfts);
@@ -363,7 +364,7 @@ public fun optimized_batch_transfer(
         nft.owner = recipient;
         transfer::public_transfer(nft, recipient);
     };
-    
+
     vector::destroy_empty(nfts);
 }
 ```
@@ -375,14 +376,14 @@ public fun optimized_batch_transfer(
 public fun batch_query_serials(nfts: &vector<NFT>): vector<u64> {
     let count = vector::length(nfts);
     let mut serials = vector::empty<u64>();
-    
+
     let mut i = 0;
     while (i < count) {
         let nft = vector::borrow(nfts, i);
         vector::push_back(&mut serials, nft.serial_number);
         i = i + 1;
     };
-    
+
     serials
 }
 
@@ -393,7 +394,7 @@ public fun batch_verify_ownership(
 ): bool {
     let count = vector::length(nfts);
     let mut i = 0;
-    
+
     while (i < count) {
         let nft = vector::borrow(nfts, i);
         if (nft.owner != expected_owner) {
@@ -401,7 +402,7 @@ public fun batch_verify_ownership(
         };
         i = i + 1;
     };
-    
+
     true
 }
 ```
@@ -448,4 +449,4 @@ public fun batch_verify_ownership(
 
 ## 下一步学习
 
-- [复合所有权模式](./composite-ownership-pattern.md)：组合多种模式解决复杂问题 *(即将发布)*
+- [复合所有权模式](./composite-ownership-pattern.md)：组合多种模式解决复杂问题 _(即将发布)_

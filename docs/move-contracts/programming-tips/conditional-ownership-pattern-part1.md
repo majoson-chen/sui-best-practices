@@ -7,6 +7,7 @@
 ## 为什么需要条件性管理？
 
 在前面学习的两种模式中：
+
 - **借用模式**：不转移所有权，适合读取和修改
 - **所有权转移模式**：确定性转移，适合明确的资产转移
 
@@ -17,10 +18,11 @@
 function craftItem(materials, recipe) {
     if (checkSuccess(recipe.successRate)) {
         // 成功：消耗材料，返回新道具
-        return createNewItem(recipe);
-    } else {
+        return createNewItem(recipe)
+    }
+    else {
         // 失败：可能返还材料，或者扣除部分材料
-        return null;
+        return null
     }
 }
 ```
@@ -104,7 +106,7 @@ public fun bad_craft_item(
         let GameItem { id: id2, name: _, item_type: _, level: _, rarity: _, owner: _ } = material2;
         object::delete(id1);
         object::delete(id2);
-        
+
         let new_item = create_item(b"Sword", 1, 1, 2, tx_context::sender(ctx), ctx);
         transfer::public_transfer(new_item, tx_context::sender(ctx));
     };
@@ -114,12 +116,14 @@ public fun bad_craft_item(
 ```
 
 **错误信息**：
+
 ```
 error: local 'material1' is not used
 error: local 'material2' is not used
 ```
 
 **问题分析**：
+
 - Move 的资源安全机制要求所有 `has key` 的对象必须被明确处理
 - 对象必须在**所有条件分支**中都被转移、返回或销毁
 - 不能有任何分支"遗忘"处理对象
@@ -133,13 +137,14 @@ public fun bad_partial_access(
     recipient: address
 ) {
     let name = item.name;  // 取出了 name 字段
-    
+
     // 编译错误：item 已经不完整，无法转移
     // transfer::public_transfer(item, recipient);
 }
 ```
 
 **问题分析**：
+
 - 一旦部分字段被 move 出来，对象就不完整了
 - 不完整的对象无法再被转移或使用
 - 如果需要读取信息，应该使用借用 `&item.name`
@@ -160,21 +165,21 @@ public fun craft_item_destroy_on_fail(
     ctx: &mut TxContext
 ): Option<GameItem> {
     let sender = tx_context::sender(ctx);
-    
+
     // 验证材料所有权
     assert!(material1.owner == sender, ENotOwner);
     assert!(material2.owner == sender, ENotOwner);
-    
+
     // 判断是否成功
     let success = random_value < recipe.success_rate;
-    
+
     if (success) {
         // 成功分支：销毁材料，创建新道具
         let GameItem { id: id1, name: _, item_type: _, level: _, rarity: _, owner: _ } = material1;
         let GameItem { id: id2, name: _, item_type: _, level: _, rarity: _, owner: _ } = material2;
         object::delete(id1);
         object::delete(id2);
-        
+
         // 创建合成结果
         let new_item = GameItem {
             id: object::new(ctx),
@@ -184,13 +189,13 @@ public fun craft_item_destroy_on_fail(
             rarity: recipe.result_rarity,
             owner: sender,
         };
-        
+
         event::emit(CraftingSuccessEvent {
             crafter: sender,
             item_name: string::utf8(string::bytes(&recipe.result_name)),
             rarity: recipe.result_rarity,
         });
-        
+
         option::some(new_item)
     } else {
         // 失败分支：销毁材料（代表合成失败的惩罚）
@@ -198,11 +203,11 @@ public fun craft_item_destroy_on_fail(
         let GameItem { id: id2, name: _, item_type: _, level: _, rarity: _, owner: _ } = material2;
         object::delete(id1);
         object::delete(id2);
-        
+
         event::emit(CraftingFailureEvent {
             crafter: sender,
         });
-        
+
         option::none()
     }
     // 关键：两个分支都完整处理了 material1 和 material2
@@ -235,19 +240,19 @@ public fun craft_item_with_refund(
     ctx: &mut TxContext
 ) {
     let sender = tx_context::sender(ctx);
-    
+
     assert!(material1.owner == sender, ENotOwner);
     assert!(material2.owner == sender, ENotOwner);
-    
+
     let success = random_value < recipe.success_rate;
-    
+
     if (success) {
         // 成功分支：销毁材料，创建并转移新道具
         let GameItem { id: id1, name: _, item_type: _, level: _, rarity: _, owner: _ } = material1;
         let GameItem { id: id2, name: _, item_type: _, level: _, rarity: _, owner: _ } = material2;
         object::delete(id1);
         object::delete(id2);
-        
+
         let new_item = GameItem {
             id: object::new(ctx),
             name: string::utf8(string::bytes(&recipe.result_name)),
@@ -256,9 +261,9 @@ public fun craft_item_with_refund(
             rarity: recipe.result_rarity,
             owner: sender,
         };
-        
+
         transfer::public_transfer(new_item, sender);
-        
+
         event::emit(CraftingSuccessEvent {
             crafter: sender,
             item_name: string::utf8(string::bytes(&recipe.result_name)),
@@ -268,7 +273,7 @@ public fun craft_item_with_refund(
         // 失败分支：返还材料给玩家
         transfer::public_transfer(material1, sender);
         transfer::public_transfer(material2, sender);
-        
+
         event::emit(CraftingFailureEvent {
             crafter: sender,
         });
@@ -278,6 +283,7 @@ public fun craft_item_with_refund(
 ```
 
 **对比分析**：
+
 - **模式1**：失败销毁材料，风险高但奖励可能更大（游戏平衡性设计）
 - **模式2**：失败返还材料，更友好但可能降低道具稀缺性
 
@@ -331,7 +337,7 @@ public fun extract_option_safe(
         let mut temp = opt_item;
         let item = option::extract(&mut temp);
         transfer::public_transfer(item, recipient);
-        
+
         // 销毁空的 Option（提取后变成 None）
         option::destroy_none(temp);
     } else {
@@ -355,6 +361,7 @@ public fun bad_extract_option(
 ```
 
 **Option 使用规则**：
+
 1. **检查后提取**：先用 `is_some` 检查，再用 `extract` 提取
 2. **提取后销毁**：提取后的空 Option 必须用 `destroy_none` 销毁
 3. **None 也要销毁**：即使是 None，也必须显式销毁
@@ -372,7 +379,7 @@ public fun upgrade_item(
 ): Option<GameItem> {
     let sender = tx_context::sender(ctx);
     assert!(item.owner == sender, ENotOwner);
-    
+
     // 升级成功率随等级降低
     let success_rate = if (item.level < 5) {
         80  // 低等级：80% 成功率
@@ -381,13 +388,13 @@ public fun upgrade_item(
     } else {
         20  // 高等级：20% 成功率
     };
-    
+
     let success = random_value < success_rate;
-    
+
     if (success) {
         // 成功：升级道具
         let GameItem { id, name, item_type, level, rarity, owner } = item;
-        
+
         let upgraded_item = GameItem {
             id,
             name,
@@ -396,26 +403,26 @@ public fun upgrade_item(
             rarity,
             owner,
         };
-        
+
         event::emit(UpgradeSuccessEvent {
             owner: sender,
             item_name: name,
             old_level: level,
             new_level: level + 1,
         });
-        
+
         option::some(upgraded_item)
     } else {
         // 失败：道具被销毁
         let GameItem { id, name, item_type: _, level, rarity: _, owner: _ } = item;
         object::delete(id);
-        
+
         event::emit(UpgradeFailureEvent {
             owner: sender,
             item_name: name,
             lost_level: level,
         });
-        
+
         option::none()
     }
 }
@@ -446,10 +453,10 @@ public fun demo_upgrade_workflow(
     ctx: &TxContext
 ) {
     let sender = tx_context::sender(ctx);
-    
+
     // 尝试升级
     let result = upgrade_item(item, random_value, ctx);
-    
+
     // 处理结果
     if (option::is_some(&result)) {
         // 升级成功，转移升级后的道具给玩家
@@ -484,19 +491,19 @@ module game::item_crafting_tests {
     #[test]
     fun test_crafting_success() {
         let mut scenario = ts::begin(PLAYER);
-        
+
         // 创建材料和配方
         ts::next_tx(&mut scenario, PLAYER);
         {
             let ctx = ts::ctx(&mut scenario);
-            
+
             // 创建两个材料
             let material1 = item_crafting::create_item(b"Iron", 3, 1, 1, PLAYER, ctx);
             let material2 = item_crafting::create_item(b"Wood", 3, 1, 1, PLAYER, ctx);
-            
+
             transfer::public_transfer(material1, PLAYER);
             transfer::public_transfer(material2, PLAYER);
-            
+
             // 创建配方
             let recipe = CraftingRecipe {
                 id: object::new(ctx),
@@ -508,14 +515,14 @@ module game::item_crafting_tests {
             };
             transfer::public_share_object(recipe);
         };
-        
+
         // 执行合成
         ts::next_tx(&mut scenario, PLAYER);
         {
             let material1 = ts::take_from_sender<GameItem>(&scenario);
             let material2 = ts::take_from_sender<GameItem>(&scenario);
             let recipe = ts::take_shared<CraftingRecipe>(&scenario);
-            
+
             let result = item_crafting::craft_item_destroy_on_fail(
                 material1,
                 material2,
@@ -523,10 +530,10 @@ module game::item_crafting_tests {
                 50,  // random_value < success_rate (100)
                 ts::ctx(&mut scenario)
             );
-            
+
             // 验证成功
             assert!(option::is_some(&result), 0);
-            
+
             // 处理结果
             if (option::is_some(&result)) {
                 let mut temp = result;
@@ -536,10 +543,10 @@ module game::item_crafting_tests {
             } else {
                 option::destroy_none(result);
             };
-            
+
             ts::return_shared(recipe);
         };
-        
+
         // 验证玩家收到新道具
         ts::next_tx(&mut scenario, PLAYER);
         {
@@ -548,23 +555,23 @@ module game::item_crafting_tests {
             assert!(item_crafting::get_rarity(&item) == 2, 2);
             ts::return_to_sender(&scenario, item);
         };
-        
+
         ts::end(scenario);
     }
 
     #[test]
     fun test_crafting_failure_with_refund() {
         let mut scenario = ts::begin(PLAYER);
-        
+
         ts::next_tx(&mut scenario, PLAYER);
         {
             let ctx = ts::ctx(&mut scenario);
             let material1 = item_crafting::create_item(b"Iron", 3, 1, 1, PLAYER, ctx);
             let material2 = item_crafting::create_item(b"Wood", 3, 1, 1, PLAYER, ctx);
-            
+
             transfer::public_transfer(material1, PLAYER);
             transfer::public_transfer(material2, PLAYER);
-            
+
             let recipe = CraftingRecipe {
                 id: object::new(ctx),
                 result_name: string::utf8(b"Iron Sword"),
@@ -575,14 +582,14 @@ module game::item_crafting_tests {
             };
             transfer::public_share_object(recipe);
         };
-        
+
         // 执行合成（失败）
         ts::next_tx(&mut scenario, PLAYER);
         {
             let material1 = ts::take_from_sender<GameItem>(&scenario);
             let material2 = ts::take_from_sender<GameItem>(&scenario);
             let recipe = ts::take_shared<CraftingRecipe>(&scenario);
-            
+
             // 使用大于成功率的随机数，确保失败
             item_crafting::craft_item_with_refund(
                 material1,
@@ -591,51 +598,51 @@ module game::item_crafting_tests {
                 80,  // random_value > success_rate (50)
                 ts::ctx(&mut scenario)
             );
-            
+
             ts::return_shared(recipe);
         };
-        
+
         // 验证材料被返还
         ts::next_tx(&mut scenario, PLAYER);
         {
             let material1 = ts::take_from_sender<GameItem>(&scenario);
             let material2 = ts::take_from_sender<GameItem>(&scenario);
-            
+
             // 验证材料被正确返还
             assert!(item_crafting::get_type(&material1) == 3, 0);
             assert!(item_crafting::get_type(&material2) == 3, 1);
-            
+
             ts::return_to_sender(&scenario, material1);
             ts::return_to_sender(&scenario, material2);
         };
-        
+
         ts::end(scenario);
     }
 
     #[test]
     fun test_upgrade_success() {
         let mut scenario = ts::begin(PLAYER);
-        
+
         ts::next_tx(&mut scenario, PLAYER);
         {
             let ctx = ts::ctx(&mut scenario);
             let item = item_crafting::create_item(b"Sword", 1, 1, 1, PLAYER, ctx);
             transfer::public_transfer(item, PLAYER);
         };
-        
+
         ts::next_tx(&mut scenario, PLAYER);
         {
             let item = ts::take_from_sender<GameItem>(&scenario);
-            
+
             // 升级（成功）
             let result = item_crafting::upgrade_item(
                 item,
                 50,  // 对于 level 1，成功率是 80%
                 ts::ctx(&mut scenario)
             );
-            
+
             assert!(option::is_some(&result), 0);
-            
+
             if (option::is_some(&result)) {
                 let mut temp = result;
                 let upgraded = option::extract(&mut temp);
@@ -646,7 +653,7 @@ module game::item_crafting_tests {
                 option::destroy_none(result);
             };
         };
-        
+
         ts::end(scenario);
     }
 }
@@ -712,9 +719,10 @@ module game::item_crafting {
 - **实战应用**：游戏道具合成和升级场景
 
 在下一篇文章中，我们将学习更复杂的条件性场景：
+
 - 条件性赠送（礼物盒系统）
 - 双方确认的道具交换
 - 批量条件处理
 - 常见陷阱和最佳实践
 
-**下一步学习**：[条件性所有权管理模式（下）- 进阶篇](./conditional-ownership-pattern-part2.md) *(即将发布)*
+**下一步学习**：[条件性所有权管理模式（下）- 进阶篇](./conditional-ownership-pattern-part2.md) _(即将发布)_

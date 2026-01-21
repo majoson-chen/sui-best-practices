@@ -50,7 +50,7 @@ module nft_market::digital_nft {
             owner: recipient,
             edition,
         };
-        
+
         // 关键操作：将 NFT 所有权转移给接收者
         transfer::public_transfer(nft, recipient);
     }
@@ -65,13 +65,14 @@ module nft_market::digital_nft {
 // 新手常见错误：转移后尝试继续使用
 public fun bad_transfer_and_log(nft: NFT, recipient: address) {
     transfer::public_transfer(nft, recipient);  // nft 已被 move
-    
+
     // 编译错误：nft 已经被转移，无法再访问
     // let name = &nft.name;  // Error: use of moved value
 }
 ```
 
 **问题分析**：
+
 - `transfer::public_transfer` 会获取 `nft` 的完全所有权
 - 一旦对象被转移，原来的变量就失效了
 - 后续任何对 `nft` 的访问都会导致编译错误
@@ -92,13 +93,14 @@ public fun bad_unused_nft(
         owner: tx_context::sender(ctx),
         edition: 1,
     };
-    
+
     // 编译错误：nft 既没有被转移，也没有被返回或销毁
     // Move 要求所有资源类型（has key）必须被明确处理
 }
 ```
 
 **问题分析**：
+
 - Move 的资源安全机制要求所有 `has key` 的对象必须被明确处理
 - 对象必须被转移、返回或销毁，不能"悬空"
 
@@ -113,7 +115,7 @@ public fun bad_unused_nft(
 public fun transfer_nft(nft: NFT, recipient: address) {
     // 建议在转移前更新对象内的所有者字段以保持一致性
     // 可以在转移前修改 nft.owner
-    
+
     // 更新字段后转移所有权
     nft.owner = recipient;
     transfer::public_transfer(nft, recipient);
@@ -137,7 +139,7 @@ public entry fun gift_nft(nft: NFT, friend: address) {
 public fun transfer_by_owner(nft: NFT, recipient: address, ctx: &TxContext) {
     // 验证调用者是当前所有者
     assert!(nft.owner == tx_context::sender(ctx), ENotOwner);
-    
+
     // 转移所有权
     nft.owner = recipient;
     transfer::public_transfer(nft, recipient);
@@ -155,13 +157,13 @@ public fun safe_transfer(
 ) {
     // 检查1：验证所有者
     assert!(nft.owner == tx_context::sender(ctx), ENotOwner);
-    
+
     // 检查2：验证接收者不是零地址
     assert!(recipient != @0x0, EInvalidRecipient);
-    
+
     // 检查3：验证接收者不是当前所有者（避免无意义转移）
     assert!(recipient != nft.owner, EInvalidRecipient);
-    
+
     // 所有检查通过，执行转移
     nft.owner = recipient;
     transfer::public_transfer(nft, recipient);
@@ -190,7 +192,7 @@ public fun transfer_with_event(nft: NFT, recipient: address) {
     let from = nft.owner;
     let to = recipient;
     let edition = nft.edition;
-    
+
     // 发出转移事件
     event::emit(TransferEvent {
         nft_id,
@@ -198,7 +200,7 @@ public fun transfer_with_event(nft: NFT, recipient: address) {
         to,
         edition,
     });
-    
+
     // 最后转移所有权
     nft.owner = recipient;
     transfer::public_transfer(nft, recipient);
@@ -218,25 +220,25 @@ public fun batch_transfer(
     recipients: vector<address>
 ) {
     use std::vector;
-    
+
     // 确保数量匹配
     assert!(vector::length(&nfts) == vector::length(&recipients), ELengthMismatch);
-    
+
     let len = vector::length(&nfts);
     let mut i = 0;
-    
+
     while (i < len) {
         let nft = vector::pop_back(&mut nfts);
         let recipient = *vector::borrow(&recipients, len - 1 - i);
-        
+
         // 转移每个 NFT
         let mut nft = nft;
         nft.owner = recipient;
         transfer::public_transfer(nft, recipient);
-        
+
         i = i + 1;
     };
-    
+
     // 清理空 vector
     vector::destroy_empty(nfts);
 }
@@ -255,16 +257,16 @@ use sui::object;
 public fun burn_nft(nft: NFT, ctx: &TxContext) {
     // 验证只有所有者可以销毁
     assert!(nft.owner == tx_context::sender(ctx), ENotOwner);
-    
-    let NFT { 
-        id, 
-        name: _, 
-        description: _, 
-        creator: _, 
-        owner: _, 
-        edition: _ 
+
+    let NFT {
+        id,
+        name: _,
+        description: _,
+        creator: _,
+        owner: _,
+        edition: _
     } = nft;
-    
+
     // 删除对象 ID
     object::delete(id);
 }
@@ -278,19 +280,19 @@ public struct BurnEvent has copy, drop {
 
 public fun burn_with_event(nft: NFT, ctx: &TxContext) {
     assert!(nft.owner == tx_context::sender(ctx), ENotOwner);
-    
+
     // 先记录信息
     let nft_id = object::id(&nft);
     let owner = nft.owner;
     let edition = nft.edition;
-    
+
     // 发出销毁事件
     event::emit(BurnEvent {
         nft_id,
         owner,
         edition,
     });
-    
+
     // 销毁对象
     let NFT { id, name: _, description: _, creator: _, owner: _, edition: _ } = nft;
     object::delete(id);
@@ -313,7 +315,7 @@ public fun atomic_swap(
     // 验证 NFT 所有者
     assert!(nft1.owner == user1, ENotOwner);
     assert!(nft2.owner == user2, ENotOwner);
-    
+
     // 原子性交换：要么都成功，要么都失败
     let mut nft1 = nft1;
     let mut nft2 = nft2;
@@ -321,7 +323,7 @@ public fun atomic_swap(
     nft2.owner = user1;
     transfer::public_transfer(nft1, user2);
     transfer::public_transfer(nft2, user1);
-    
+
     // 注意：如果任何一个 transfer 失败，整个交易会回滚
 }
 ```
@@ -339,10 +341,10 @@ public fun atomic_swap(
 public fun demonstrate_complete_transfer(nft: NFT, new_owner: address) {
     // 在转移前，我们完全控制 nft
     let old_owner = nft.owner;
-    
+
     // 转移所有权
     transfer::public_transfer(nft, new_owner);
-    
+
     // 转移后，nft 变量失效
     // 原所有者（old_owner）无法再访问或操作这个 NFT
     // 只有 new_owner 可以对这个 NFT 进行操作
@@ -362,11 +364,11 @@ public fun atomic_transfer_demo(
 ) {
     // 假设有一些前置检查
     assert!(nft.owner == tx_context::sender(ctx), ENotOwner);
-    
+
     // 如果这个 assert 失败，整个交易回滚
     // nft 不会被转移，仍然属于原所有者
     assert!(recipient != @0x0, EInvalidRecipient);
-    
+
     // 只有所有检查都通过，才会执行转移
     let mut nft = nft;
     nft.owner = recipient;
@@ -384,7 +386,7 @@ public fun irreversible_transfer(nft: NFT, recipient: address) {
     let mut nft = nft;
     nft.owner = recipient;
     transfer::public_transfer(nft, recipient);
-    
+
     // 转移后没有"撤销"或"回滚"的机制
     // 如果接收者是恶意地址或错误地址，NFT 可能永久丢失
     // 这就是为什么转移前的验证如此重要
@@ -438,7 +440,7 @@ module nft_market::digital_nft_tests {
     #[test]
     fun test_mint_and_transfer() {
         let mut scenario = ts::begin(ADMIN);
-        
+
         // 场景1：管理员铸造 NFT 给 USER1
         ts::next_tx(&mut scenario, ADMIN);
         {
@@ -450,68 +452,68 @@ module nft_market::digital_nft_tests {
                 ts::ctx(&mut scenario)
             );
         };
-        
+
         // 场景2：USER1 收到 NFT
         ts::next_tx(&mut scenario, USER1);
         {
             let nft = ts::take_from_sender<NFT>(&scenario);
-            
+
             // 验证 NFT 属于 USER1
             assert!(digital_nft::get_owner(&nft) == USER1, 0);
-            
+
             // USER1 转移给 USER2
             digital_nft::transfer_nft(nft, USER2);
         };
-        
+
         // 场景3：USER2 收到 NFT
         ts::next_tx(&mut scenario, USER2);
         {
             let nft = ts::take_from_sender<NFT>(&scenario);
-            
+
             // 验证 NFT 现在属于 USER2
             assert!(digital_nft::get_owner(&nft) == USER2, 1);
-            
+
             // 返还 NFT
             ts::return_to_sender(&scenario, nft);
         };
-        
+
         ts::end(scenario);
     }
 
     #[test]
     fun test_batch_transfer() {
         let mut scenario = ts::begin(ADMIN);
-        
+
         ts::next_tx(&mut scenario, ADMIN);
         {
             let ctx = ts::ctx(&mut scenario);
-            
+
             // 铸造多个 NFT
             digital_nft::mint_nft(b"NFT 1", b"First", 1, ADMIN, ctx);
             digital_nft::mint_nft(b"NFT 2", b"Second", 2, ADMIN, ctx);
             digital_nft::mint_nft(b"NFT 3", b"Third", 3, ADMIN, ctx);
         };
-        
+
         ts::next_tx(&mut scenario, ADMIN);
         {
             use std::vector;
-            
+
             // 收集所有 NFT
             let mut nfts = vector::empty<NFT>();
             vector::push_back(&mut nfts, ts::take_from_sender<NFT>(&scenario));
             vector::push_back(&mut nfts, ts::take_from_sender<NFT>(&scenario));
             vector::push_back(&mut nfts, ts::take_from_sender<NFT>(&scenario));
-            
+
             // 准备接收者列表
             let mut recipients = vector::empty<address>();
             vector::push_back(&mut recipients, USER1);
             vector::push_back(&mut recipients, USER2);
             vector::push_back(&mut recipients, USER1);
-            
+
             // 批量转移
             digital_nft::batch_transfer(nfts, recipients);
         };
-        
+
         ts::end(scenario);
     }
 
@@ -519,7 +521,7 @@ module nft_market::digital_nft_tests {
     #[expected_failure(abort_code = digital_nft::ENotOwner)]
     fun test_transfer_by_non_owner_should_fail() {
         let mut scenario = ts::begin(ADMIN);
-        
+
         // USER1 铸造 NFT
         ts::next_tx(&mut scenario, USER1);
         {
@@ -531,12 +533,12 @@ module nft_market::digital_nft_tests {
                 ts::ctx(&mut scenario)
             );
         };
-        
+
         // USER2 尝试转移 USER1 的 NFT（应该失败）
         ts::next_tx(&mut scenario, USER2);
         {
             let nft = ts::take_from_address<NFT>(&scenario, USER1);
-            
+
             // 这里应该失败，因为 USER2 不是所有者
             digital_nft::transfer_by_owner(
                 nft,
@@ -544,7 +546,7 @@ module nft_market::digital_nft_tests {
                 ts::ctx(&mut scenario)
             );
         };
-        
+
         ts::end(scenario);
     }
 }

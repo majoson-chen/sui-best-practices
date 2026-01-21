@@ -8,8 +8,8 @@ export const sidebar = [
     { text: '密码学基础', items: [
         {
             text: '密码学大冒险',
-            link: '/crypto/CryptographicAdventure.md'
-        }
+            link: '/crypto/CryptographicAdventure.md',
+        },
     ] },
     { text: 'Move 合约', items: [
         { text: '编程技巧', items: [
@@ -20,8 +20,8 @@ export const sidebar = [
         { text: '安全实践', items: [
             {
                 text: 'entry&public',
-                link: '/entry-public/use-entry-public.md'
-            }
+                link: '/entry-public/use-entry-public.md',
+            },
         ] },
     ] },
     {

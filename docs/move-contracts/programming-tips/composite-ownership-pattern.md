@@ -14,6 +14,7 @@
 4. **批量处理模式**：高效处理多个对象
 
 在 NFT 拍卖系统中，这些模式都会用到：
+
 - 查询拍卖信息 → 借用
 - 出价时锁定资金 → 转移
 - 拍卖结束根据结果分配 → 条件性管理
@@ -90,7 +91,7 @@ public fun create_auction(
 ) {
     let seller = tx_context::sender(ctx);
     let end_time = tx_context::epoch(ctx) + duration;
-    
+
     // 创建拍卖记录
     let auction = Auction {
         id: object::new(ctx),
@@ -103,16 +104,16 @@ public fun create_auction(
         end_time,
         is_active: true,
     };
-    
+
     let auction_id = object::id(&auction);
-    
+
     // 借用：更新市场状态
     vector::push_back(&mut market.active_auctions, auction_id);
     market.total_auctions = market.total_auctions + 1;
-    
+
     // 转移拍卖对象
     transfer::public_share_object(auction);
-    
+
     event::emit(AuctionCreatedEvent {
         auction_id,
         seller,
@@ -145,12 +146,12 @@ public fun place_bid(
 ) {
     let bidder = tx_context::sender(ctx);
     let bid_amount = coin::value(&bid_coin);
-    
+
     // 借用：检查拍卖状态
     assert!(auction.is_active, EAuctionEnded);
     assert!(tx_context::epoch(ctx) < auction.end_time, EAuctionEnded);
     assert!(bid_amount > auction.current_bid, EBidTooLow);
-    
+
     // 条件性管理：处理前一个出价者的保证金
     if (option::is_some(&auction.highest_bidder)) {
         // 有前一个出价者，退还其保证金
@@ -159,11 +160,11 @@ public fun place_bid(
         let refund = coin::take(&mut auction.bid_deposit, refund_amount, ctx);
         transfer::public_transfer(refund, previous_bidder);
     };
-    
+
     // 转移：存入新的出价
     let bid_balance = coin::into_balance(bid_coin);
     balance::join(&mut auction.bid_deposit, bid_balance);
-    
+
     // 借用：更新拍卖状态
     auction.current_bid = bid_amount;
     if (option::is_some(&auction.highest_bidder)) {
@@ -171,7 +172,7 @@ public fun place_bid(
     } else {
         option::fill(&mut auction.highest_bidder, bidder);
     };
-    
+
     event::emit(BidPlacedEvent {
         auction_id: object::id(auction),
         bidder,
@@ -201,34 +202,34 @@ public fun finalize_auction(
     ctx: &mut TxContext
 ) {
     let current_time = tx_context::epoch(ctx);
-    
+
     // 借用：验证时间和状态
     assert!(current_time >= auction.end_time, EAuctionActive);
     assert!(auction.is_active, EAuctionEnded);
-    
+
     auction.is_active = false;
-    
+
     // 条件性管理：根据是否有出价决定处理方式
     if (option::is_some(&auction.highest_bidder)) {
         // 有出价：成功的拍卖
         let winner = *option::borrow(&auction.highest_bidder);
         let final_price = auction.current_bid;
-        
+
         // 计算平台费用
         let platform_fee = (final_price * market.platform_fee_rate) / 10000;
         let seller_amount = final_price - platform_fee;
-        
+
         // 转移：提取保证金并分配
         let total_balance = balance::value(&auction.bid_deposit);
-        
+
         // 平台费用
         let fee_balance = balance::split(&mut auction.bid_deposit, platform_fee);
         balance::join(&mut market.platform_balance, fee_balance);
-        
+
         // 卖家收益
         let seller_coin = coin::take(&mut auction.bid_deposit, seller_amount, ctx);
         transfer::public_transfer(seller_coin, auction.seller);
-        
+
         // 转移：NFT 给赢家
         if (option::is_some(&auction.nft)) {
             let mut temp = option::none<AuctionNFT>();
@@ -237,7 +238,7 @@ public fun finalize_auction(
             transfer::public_transfer(nft, winner);
             option::destroy_none(temp);
         };
-        
+
         event::emit(AuctionFinalizedEvent {
             auction_id: object::id(auction),
             winner,
@@ -254,7 +255,7 @@ public fun finalize_auction(
             transfer::public_transfer(nft, auction.seller);
             option::destroy_none(temp);
         };
-        
+
         event::emit(AuctionCancelledEvent {
             auction_id: object::id(auction),
             seller: auction.seller,
@@ -291,17 +292,17 @@ public fun batch_finalize_auctions(
 ): BatchFinalizeResult {
     let current_time = tx_context::epoch(ctx);
     let total_count = vector::length(&auction_ids);
-    
+
     let mut finalized = 0;
     let mut skipped = 0;
     let mut i = 0;
-    
+
     while (i < total_count) {
         let auction_id = *vector::borrow(&auction_ids, i);
-        
+
         // 注意：这里简化了，实际需要获取 Auction 对象
         // 在真实场景中，可能需要传入 vector<&mut Auction>
-        
+
         // 条件性处理（伪代码示例）
         // if (should_finalize) {
         //     finalize_single_auction(market, auction, ctx);
@@ -309,10 +310,10 @@ public fun batch_finalize_auctions(
         // } else {
         //     skipped = skipped + 1;
         // };
-        
+
         i = i + 1;
     };
-    
+
     BatchFinalizeResult {
         total_count,
         finalized,
@@ -342,19 +343,19 @@ public fun cancel_auction(
     ctx: &mut TxContext
 ) {
     let sender = tx_context::sender(ctx);
-    
+
     // 借用：验证权限
     assert!(sender == auction.seller, ENotSeller);
     assert!(auction.is_active, EAuctionEnded);
-    
+
     // 条件性管理：只能在无出价时取消
     if (option::is_some(&auction.highest_bidder)) {
         // 有出价，不能取消，只能等待拍卖结束
         abort EAuctionActive
     };
-    
+
     auction.is_active = false;
-    
+
     // 转移：退还 NFT
     if (option::is_some(&auction.nft)) {
         let mut temp = option::none<AuctionNFT>();
@@ -363,7 +364,7 @@ public fun cancel_auction(
         transfer::public_transfer(nft, auction.seller);
         option::destroy_none(temp);
     };
-    
+
     event::emit(AuctionCancelledEvent {
         auction_id: object::id(auction),
         seller: auction.seller,
@@ -403,14 +404,14 @@ public fun get_market_stats(market: &AuctionMarket): (u64, u64, u64) {
 public fun batch_query_auctions(auctions: &vector<Auction>): vector<bool> {
     let count = vector::length(auctions);
     let mut results = vector::empty<bool>();
-    
+
     let mut i = 0;
     while (i < count) {
         let auction = vector::borrow(auctions, i);
         vector::push_back(&mut results, auction.is_active);
         i = i + 1;
     };
-    
+
     results
 }
 ```
@@ -421,7 +422,7 @@ public fun batch_query_auctions(auctions: &vector<Auction>): vector<bool> {
 
 ```move
 /// 决策流程示例：处理拍卖结束
-/// 
+///
 /// 1. 借用检查状态
 ///    ├─ 是否到期？
 ///    │  ├─ 否 → abort
@@ -452,14 +453,14 @@ public fun track_resource_flow_example(
     // 阶段1：资源输入
     // - auction: 借用
     // - payment: 转移（所有权进入函数）
-    
+
     let payment_balance = coin::into_balance(payment);
     // payment 已被消耗，转换为 balance
-    
+
     // 阶段2：资源处理
     balance::join(&mut auction.bid_deposit, payment_balance);
     // payment_balance 已被消耗，合并到 auction
-    
+
     // 阶段3：资源输出
     // - auction: 返还借用
     // - payment: 已完全转移，不再存在
@@ -478,7 +479,7 @@ public fun atomic_operation_example(
     // 先做所有验证（只使用借用）
     assert!(auction.is_active, EAuctionEnded);
     assert!(coin::value(&payment) >= auction.starting_price, EBidTooLow);
-    
+
     // 验证通过后才执行转移操作
     // 确保要么全部成功，要么全部失败
     let payment_balance = coin::into_balance(payment);
@@ -527,7 +528,7 @@ public fun batch_operation_optimized(
 ) {
     let count = vector::length(&auctions);
     let current_time = tx_context::epoch(ctx);
-    
+
     // 第一遍：只验证（借用）
     let mut i = 0;
     while (i < count) {
@@ -535,7 +536,7 @@ public fun batch_operation_optimized(
         assert!(current_time >= auction.end_time, EAuctionActive);
         i = i + 1;
     };
-    
+
     // 第二遍：执行操作
     // ...
 }
@@ -545,13 +546,13 @@ public fun batch_operation_optimized(
 
 ### **模式组合决策**
 
-| 场景 | 主要模式 | 辅助模式 | 原因 |
-|------|---------|---------|------|
-| 创建拍卖 | 转移 | 借用 | NFT 转移，市场状态更新 |
-| 出价 | 转移 + 条件 | 借用 | 资金转移，条件退款 |
-| 结束拍卖 | 条件 + 转移 | 借用 | 根据结果分配资源 |
-| 批量查询 | 借用 | - | 只读操作 |
-| 批量结束 | 批量 + 条件 | 转移 | 多个拍卖条件处理 |
+| 场景     | 主要模式    | 辅助模式 | 原因                   |
+| -------- | ----------- | -------- | ---------------------- |
+| 创建拍卖 | 转移        | 借用     | NFT 转移，市场状态更新 |
+| 出价     | 转移 + 条件 | 借用     | 资金转移，条件退款     |
+| 结束拍卖 | 条件 + 转移 | 借用     | 根据结果分配资源       |
+| 批量查询 | 借用        | -        | 只读操作               |
+| 批量结束 | 批量 + 条件 | 转移     | 多个拍卖条件处理       |
 
 ### **设计检查清单**
 

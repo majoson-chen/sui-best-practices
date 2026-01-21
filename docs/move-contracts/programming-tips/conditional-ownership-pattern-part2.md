@@ -35,19 +35,19 @@ module game::gift_system {
     ): Option<GameItem> {
         let sender = tx_context::sender(ctx);
         let current_epoch = tx_context::epoch(ctx);
-        
-        let GiftBox { 
+
+        let GiftBox {
             id, item, required_level, expiry_epoch,
-            sender: gift_sender, recipient 
+            sender: gift_sender, recipient
         } = gift_box;
-        
+
         // 验证接收者
         assert!(sender == recipient, ENotRecipient);
-        
+
         // 判断条件
         let is_expired = current_epoch > expiry_epoch;
         let level_sufficient = player_level >= required_level;
-        
+
         if (is_expired) {
             // 过期：退回赠送者
             if (option::is_some(&item)) {
@@ -105,13 +105,13 @@ module game::trade_system {
     /// 接受赠送（单向）
     public fun accept_gift(proposal: TradeProposal, ctx: &TxContext) {
         let sender = tx_context::sender(ctx);
-        let TradeProposal { 
-            id, proposer, proposer_item, target, is_gift 
+        let TradeProposal {
+            id, proposer, proposer_item, target, is_gift
         } = proposal;
-        
+
         assert!(sender == target, ENotTarget);
         assert!(is_gift, ENotGift);
-        
+
         // 转移道具
         if (option::is_some(&proposer_item)) {
             let mut temp = proposer_item;
@@ -121,7 +121,7 @@ module game::trade_system {
         } else {
             option::destroy_none(proposer_item);
         };
-        
+
         object::delete(id);
     }
 
@@ -132,13 +132,13 @@ module game::trade_system {
         ctx: &TxContext
     ) {
         let sender = tx_context::sender(ctx);
-        let TradeProposal { 
-            id, proposer, proposer_item, target, is_gift 
+        let TradeProposal {
+            id, proposer, proposer_item, target, is_gift
         } = proposal;
-        
+
         assert!(sender == target, ENotTarget);
         assert!(!is_gift, EIsGift);
-        
+
         // 原子性交换
         if (option::is_some(&proposer_item)) {
             let mut temp = proposer_item;
@@ -150,19 +150,19 @@ module game::trade_system {
             transfer::public_transfer(target_item, proposer);
             option::destroy_none(proposer_item);
         };
-        
+
         object::delete(id);
     }
 
     /// 取消交换
     public fun cancel_trade(proposal: TradeProposal, ctx: &TxContext) {
         let sender = tx_context::sender(ctx);
-        let TradeProposal { 
-            id, proposer, proposer_item, target: _, is_gift: _ 
+        let TradeProposal {
+            id, proposer, proposer_item, target: _, is_gift: _
         } = proposal;
-        
+
         assert!(sender == proposer, ENotProposer);
-        
+
         // 返还道具
         if (option::is_some(&proposer_item)) {
             let mut temp = proposer_item;
@@ -172,7 +172,7 @@ module game::trade_system {
         } else {
             option::destroy_none(proposer_item);
         };
-        
+
         object::delete(id);
     }
 
@@ -184,6 +184,7 @@ module game::trade_system {
 ```
 
 **关键设计**：
+
 - 单向赠送：只转移提议者的道具
 - 双向交换：原子性交换双方道具
 - 取消机制：安全返还道具
@@ -214,21 +215,21 @@ module game::batch_operations {
     ): BatchCraftResult {
         let sender = tx_context::sender(ctx);
         let material_count = vector::length(&materials);
-        
+
         assert!(material_count % 2 == 0, EInvalidCount);
         assert!(vector::length(&random_values) == material_count / 2, EInvalidCount);
-        
+
         let mut success_count = 0;
         let mut failed_count = 0;
         let mut i = 0;
-        
+
         while (i < material_count / 2) {
             let mat1 = vector::pop_back(&mut materials);
             let mat2 = vector::pop_back(&mut materials);
             let random = *vector::borrow(&random_values, i);
-            
+
             let success = random < get_success_rate(recipe);
-            
+
             if (success) {
                 // 成功：销毁材料，创建新道具
                 destroy_item(mat1);
@@ -242,12 +243,12 @@ module game::batch_operations {
                 transfer::public_transfer(mat2, sender);
                 failed_count = failed_count + 1;
             };
-            
+
             i = i + 1;
         };
-        
+
         vector::destroy_empty(materials);
-        
+
         BatchCraftResult { success_count, failed_count }
     }
 
@@ -310,7 +311,7 @@ public fun good_loop(items: vector<GameItem>, ctx: &TxContext): vector<GameItem>
     while (i < vector::length(&items)) {
         let item = vector::pop_back(&mut items);
         let opt = process_item(item);
-        
+
         if (option::is_some(&opt)) {
             let mut temp = opt;
             let processed = option::extract(&mut temp);
@@ -319,7 +320,7 @@ public fun good_loop(items: vector<GameItem>, ctx: &TxContext): vector<GameItem>
         } else {
             option::destroy_none(opt);
         };
-        
+
         i = i + 1;
     };
     vector::destroy_empty(items);
@@ -378,7 +379,7 @@ public fun conditional_template(
 ) {
     // 1. 验证权限
     assert!(check_permission(&object, ctx), ENotAuthorized);
-    
+
     // 2. 根据条件处理
     if (condition) {
         // 成功分支
@@ -405,5 +406,6 @@ public fun conditional_template(
 ## 下一步学习
 
 接下来可以学习：
+
 - [批量处理模式](./batch-processing-pattern.md)：高效处理大量对象
 - [复合所有权模式](./composite-ownership-pattern.md)：组合多种模式解决复杂问题
