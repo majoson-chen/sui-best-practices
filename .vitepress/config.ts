@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
-import { sidebar } from './sidebar'
+import { generateSidebar } from 'vitepress-sidebar'
+// import { sidebar } from './sidebar'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -14,7 +15,11 @@ export default defineConfig({
             { text: '贡献指南', link: '/how-to-contribute' },
         ],
 
-        sidebar,
+        sidebar: generateSidebar({
+            documentRootPath: 'docs',
+            useTitleFromFileHeading: true,
+            useFolderTitleFromIndexFile: true,
+        }),
 
         socialLinks: [
             { icon: 'github', link: 'https://github.com/majoson-chen/sui-best-practices/' },
