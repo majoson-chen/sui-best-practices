@@ -42,10 +42,10 @@ struct TaskID has key, store {
 
 #### 查询语句
 
-```
+```typescript
 async function queryDeTaskStore() {
     try {
-        console.log('🔍 查询 DeTaskStore 对象...');
+        console.log('🔍 查询 DeTaskStore 对象...')
 
         const objectResult = await client.getObject({
             id: CONFIG.deTaskStoreId,
@@ -55,32 +55,30 @@ async function queryDeTaskStore() {
                 showOwner: true,
                 showPreviousTransaction: true
             }
-        });
+        })
 
-        if (objectResult.error) {
-            throw new Error(`查询失败: ${objectResult.error}`);
-        }
+        if (objectResult.error) { throw new Error(`查询失败: ${objectResult.error}`) }
 
-        const objectData = objectResult.data;
-        console.log('✅ DeTaskStore 对象信息:');
-        console.log('   对象ID:', objectData.objectId);
-        console.log('   类型:', objectData.type);
-        console.log('   所有者:', objectData.owner);
+        const objectData = objectResult.data
+        console.log('✅ DeTaskStore 对象信息:')
+        console.log('   对象ID:', objectData.objectId)
+        console.log('   类型:', objectData.type)
+        console.log('   所有者:', objectData.owner)
 
         if (objectData.content) {
-            console.log('   内容详情:');
-            console.log('   - UID:', objectData.content.fields.id);
-            console.log('   - Table ID:', objectData.content.fields.tbtask.fields.id);
-            console.log('   - Table 大小:', objectData.content.fields.tbtask.fields.size);
+            console.log('   内容详情:')
+            console.log('   - UID:', objectData.content.fields.id)
+            console.log('   - Table ID:', objectData.content.fields.tbtask.fields.id)
+            console.log('   - Table 大小:', objectData.content.fields.tbtask.fields.size)
         }
 
-        return objectData;
-    } catch (error) {
-        console.error('❌ 查询 DeTaskStore 失败:', error.message);
-        throw error;
+        return objectData
+    }
+    catch (error) {
+        console.error('❌ 查询 DeTaskStore 失败:', error.message)
+        throw error
     }
 }
-
 ```
 
 #### 返回结果示例
@@ -90,17 +88,17 @@ async function queryDeTaskStore() {
 =====================================
 🔍 查询 DeTaskStore 对象...
 ✅ DeTaskStore 对象信息:
-   对象ID: 0xcfb552a63e002d7c9a1b291d360bb1159a1caf1ff04b5967724a310ef02a34ce
-   类型: 0xf4cfb002100765cca7481e74fba7a43031be37f06477b19239221dcb80f95941::tablequery::DeTaskStore
-   所有者: { Shared: { initial_shared_version: 629897369 } }
-   内容详情:
-   - UID: {
-  id: '0xcfb552a63e002d7c9a1b291d360bb1159a1caf1ff04b5967724a310ef02a34ce'
+    对象ID: 0xcfb552a63e002d7c9a1b291d360bb1159a1caf1ff04b5967724a310ef02a34ce
+    类型: 0xf4cfb002100765cca7481e74fba7a43031be37f06477b19239221dcb80f95941::tablequery::DeTaskStore
+    所有者: { Shared: { initial_shared_version: 629897369 } }
+    内容详情:
+    - UID: {
+        id: '0xcfb552a63e002d7c9a1b291d360bb1159a1caf1ff04b5967724a310ef02a34ce'
+    }
+    - Table ID: {
+    id: '0x08104eeb9bccceac7a9300cc5d2631698d0f60cd8cf491702acd3da76b27e315'
 }
-   - Table ID: {
-  id: '0x08104eeb9bccceac7a9300cc5d2631698d0f60cd8cf491702acd3da76b27e315'
-}
-   - Table 大小: 1
+- Table 大小: 1
 ```
 
 ### 2. 查询 Table (tbtask) 中的所有条目

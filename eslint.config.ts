@@ -10,7 +10,11 @@ export default antfu({
         quotes: 'single',
         semi: false,
     },
-    markdown: true,
+    markdown: {
+        overrides: {
+            'style/max-statements-per-line': 'off',
+        },
+    },
     rules: {
         'style/curly-newline': ['warn', {
             multiline: true,
