@@ -91,8 +91,8 @@ public fun process_user(user: User, recipient: address) {
 
 详细教程：
 
-- [条件性所有权管理模式（上）- 基础篇](./conditional-ownership-pattern-part1.md)
-- [条件性所有权管理模式（下）- 进阶篇](./conditional-ownership-pattern-part2.md)
+- [条件性所有权管理模式（上）- 基础篇](./conditional-ownership-pattern/part1.md)
+- [条件性所有权管理模式（下）- 进阶篇](./conditional-ownership-pattern/part2.md)
 
 ### 模式四：批量处理模式 (Batch Processing)
 
